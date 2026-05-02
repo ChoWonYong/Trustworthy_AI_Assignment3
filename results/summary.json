@@ -1,0 +1,55 @@
+{
+  "onnx": "./models/fashion_mlp.onnx",
+  "image_index": 0,
+  "true_label": 9,
+  "predicted_class": 9,
+  "timeout_sec": 60,
+  "results": [
+    {
+      "epsilon": 0.02,
+      "verdict": "not_robust",
+      "total_time_sec": 0.3982245922088623,
+      "details": [
+        {
+          "target": 0,
+          "exit_code": "unsat",
+          "time_sec": 0.039312124252319336,
+          "n_assignments": 0
+        },
+        {
+          "target": 1,
+          "exit_code": "unsat",
+          "time_sec": 0.03628993034362793,
+          "n_assignments": 0
+        },
+        {
+          "target": 2,
+          "exit_code": "unsat",
+          "time_sec": 0.08228635787963867,
+          "n_assignments": 0
+        },
+        {
+          "target": 3,
+          "exit_code": "unsat",
+          "time_sec": 0.06085538864135742,
+          "n_assignments": 0
+        },
+        {
+          "target": 4,
+          "exit_code": "unsat",
+          "time_sec": 0.06000661849975586,
+          "n_assignments": 0
+        },
+        {
+          "target": 5,
+          "exit_code": "sat",
+          "time_sec": 0.11947417259216309,
+          "n_assignments": 890
+        }
+      ],
+      "first_sat_target": 5,
+      "adv_npy": "results_smoke/adv_eps0.02.npy",
+      "adv_png": "results_smoke/adv_eps0.02.png"
+    }
+  ]
+}

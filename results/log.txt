@@ -1,0 +1,20 @@
+image idx=0  true=9 (Ankle boot)  pred=9 (Ankle boot)
+
+L-infinity robustness sweep:
+
+eps = 0.02
+    target= 0 (T-shirt/top) -> unsat   in   0.04s
+    target= 1 (    Trouser) -> unsat   in   0.04s
+    target= 2 (   Pullover) -> unsat   in   0.08s
+    target= 3 (      Dress) -> unsat   in   0.06s
+    target= 4 (       Coat) -> unsat   in   0.06s
+    target= 5 (     Sandal) -> sat     in   0.12s
+  verdict: not_robust   total time: 0.40s
+  -> adversarial flips prediction to 5 (Sandal)
+  -> saved results_smoke/adv_eps0.02.npy and results_smoke/adv_eps0.02.png
+
+=== summary ===
+ epsilon     verdict   total_time(s)
+  0.0200  not_robust            0.40
+
+wrote results_smoke/summary.json and results_smoke/log.txt

@@ -172,6 +172,52 @@ def verify_robustness(onnx_path, image_flat, orig_class, epsilon,
     return {"verdict": "robust", "details": per_target}
 
 
+def save_adversarial(out_dir: pathlib.Path, eps: float,
+                     image_flat: np.ndarray, adv_flat: np.ndarray,
+                     orig_class: int, target_class: int):
+    """Persist the adversarial input as .npy and a 3-panel .png visualisation.
+
+    Returns dict of file paths (relative to out_dir's parent) for the summary.
+    """
+    tag = f"eps{eps:.4f}".rstrip("0").rstrip(".")
+    npy_path = out_dir / f"adv_{tag}.npy"
+    png_path = out_dir / f"adv_{tag}.png"
+
+    np.save(npy_path, adv_flat)
+
+    # Lazy import: matplotlib is only needed when a counterexample is found.
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    orig_img = image_flat.reshape(28, 28)
+    adv_img = adv_flat.reshape(28, 28)
+    diff = adv_img - orig_img
+    # Amplify for display: scale so the largest |diff| maps to 1.
+    max_abs = max(float(np.max(np.abs(diff))), 1e-8)
+    diff_amp = diff / max_abs
+
+    fig, axes = plt.subplots(1, 3, figsize=(9, 3.4))
+    axes[0].imshow(orig_img, cmap="gray", vmin=0, vmax=1)
+    axes[0].set_title(f"original\nclass = {orig_class} "
+                      f"({FASHION_LABELS[orig_class]})")
+    axes[1].imshow(adv_img, cmap="gray", vmin=0, vmax=1)
+    axes[1].set_title(f"adversarial\nflips to {target_class} "
+                      f"({FASHION_LABELS[target_class]})")
+    im = axes[2].imshow(diff_amp, cmap="seismic", vmin=-1, vmax=1)
+    axes[2].set_title(f"diff (scaled x{1.0/max_abs:.1f})\n"
+                      f"max|delta| = {max_abs:.4f}, eps = {eps}")
+    for ax in axes:
+        ax.set_xticks([])
+        ax.set_yticks([])
+    fig.colorbar(im, ax=axes[2], fraction=0.046, pad=0.04)
+    fig.tight_layout()
+    fig.savefig(png_path, dpi=120, bbox_inches="tight")
+    plt.close(fig)
+
+    return {"adv_npy": str(npy_path), "adv_png": str(png_path)}
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--onnx", default=ONNX_PATH)
@@ -182,7 +228,8 @@ def main():
     parser.add_argument("--timeout", type=int, default=60,
                         help="Per-target Marabou timeout (seconds)")
     parser.add_argument("--output-dir", default="results",
-                        help="Directory for summary.json and log.txt")
+                        help="Directory for summary.json, log.txt, "
+                             "adversarial .npy / .png")
     args = parser.parse_args()
 
     out_dir = pathlib.Path(args.output_dir)
@@ -220,7 +267,13 @@ def main():
             tgt = result.get("first_sat_target")
             print(f"  -> adversarial flips prediction to "
                   f"{tgt} ({FASHION_LABELS[tgt]})")
-            record["first_sat_target"] = tgt
+            adv = result.get("adv_example")
+            if adv is not None and tgt is not None:
+                paths = save_adversarial(
+                    out_dir, eps, image, adv, pred, tgt)
+                record["first_sat_target"] = tgt
+                record.update(paths)
+                print(f"  -> saved {paths['adv_npy']} and {paths['adv_png']}")
         per_eps_records.append(record)
 
     print("\n=== summary ===")

@@ -5,3 +5,4 @@ torchvision>=0.15
 numpy>=1.24
 onnx>=1.14
 onnxruntime>=1.16
+matplotlib>=3.5

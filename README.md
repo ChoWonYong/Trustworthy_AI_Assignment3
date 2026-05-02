@@ -61,11 +61,22 @@ a standard system Python it can be omitted.
 * `--epsilons ...`   list of L-infinity radii to verify
 * `--timeout S`      per-target Marabou timeout in seconds
 * `--onnx PATH`      path to the ONNX model (default `models/fashion_mlp.onnx`)
+* `--output-dir D`   directory for `summary.json`, `log.txt`, and any
+                     adversarial `.npy` / `.png` artefacts (default `results/`)
 
 For each `eps`, the script asks Marabou whether some other class can
 beat the original predicted class inside the L-infinity ball. SAT means
 an adversarial example exists; UNSAT means the model is verified robust
 at that radius.
+
+Per run, `--output-dir` is populated with:
+
+* `summary.json` — per-eps verdict, total time, full per-target detail,
+  and (when SAT) the path of the saved counterexample.
+* `log.txt` — full mirror of stdout.
+* `adv_eps<value>.npy` — raw 784-d adversarial input found by Marabou.
+* `adv_eps<value>.png` — three-panel visualisation: original image,
+  adversarial image, and amplified pixel-wise difference.
 
 ## Reference results
 
@@ -79,3 +90,13 @@ Test image index 0 (true label "Ankle boot", model also predicts
 | 0.010  | robust       |    0.40 s  |                                    |
 | 0.020  | **not robust** | 0.36 s   | SAT: prediction flips to "Sandal"  |
 | 0.050  | **not robust** | 0.44 s   | SAT (early termination on Sandal)  |
+
+Counterexample at eps = 0.020 (saved automatically by `test.py`):
+
+![adversarial example at eps=0.02](results/adv_eps0.02.png)
+
+Left: original input, predicted "Ankle boot". Middle: Marabou's
+counterexample inside the L-infinity ball of radius 0.02, which the
+network now classifies as "Sandal". Right: the per-pixel perturbation,
+amplified for visibility — every pixel stays within ±0.02 of the
+original.

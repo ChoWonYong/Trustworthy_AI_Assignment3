@@ -1,0 +1,10 @@
+# Datasets are downloaded at runtime
+data/
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Logs / scratch
+*.log
+*.tmp

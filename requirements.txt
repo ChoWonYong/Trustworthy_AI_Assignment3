@@ -1,0 +1,7 @@
+# Python dependencies for trustworthy3 (assignment 3).
+# Marabou itself must be built from source separately -- see README.md.
+torch>=2.0
+torchvision>=0.15
+numpy>=1.24
+onnx>=1.14
+onnxruntime>=1.16

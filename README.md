@@ -12,7 +12,6 @@ L-infinity robustness with [Marabou](https://github.com/NeuralNetworkVerificatio
 | `test.py`  | Loads the ONNX model, formulates the L-infinity robustness query, and runs Marabou for several perturbation radii. |
 | `models/fashion_mlp.onnx` | The trained network (input to Marabou). |
 | `requirements.txt` | Python dependencies. |
-| `problem1_resources_summary.txt` | Exploration notes for Problem 1. |
 
 ## 1. Install Marabou
 

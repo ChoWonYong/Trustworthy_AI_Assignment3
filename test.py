@@ -26,6 +26,7 @@ is an adversarial example targeting class i.
 import os
 import sys
 import time
+import json
 import argparse
 import pathlib
 
@@ -53,6 +54,22 @@ FASHION_LABELS = [
     "T-shirt/top", "Trouser", "Pullover", "Dress", "Coat",
     "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot",
 ]
+
+
+class _Tee:
+    """Mirror writes to multiple streams (used to also write stdout to log.txt)."""
+
+    def __init__(self, *streams):
+        self.streams = streams
+
+    def write(self, data):
+        for s in self.streams:
+            s.write(data)
+            s.flush()
+
+    def flush(self):
+        for s in self.streams:
+            s.flush()
 
 
 def load_test_image(index: int):
@@ -164,7 +181,15 @@ def main():
                         default=[0.001, 0.005, 0.01, 0.02])
     parser.add_argument("--timeout", type=int, default=60,
                         help="Per-target Marabou timeout (seconds)")
+    parser.add_argument("--output-dir", default="results",
+                        help="Directory for summary.json and log.txt")
     args = parser.parse_args()
+
+    out_dir = pathlib.Path(args.output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    log_path = out_dir / "log.txt"
+    log_file = open(log_path, "w")
+    sys.stdout = _Tee(sys.__stdout__, log_file)
 
     image, label = load_test_image(args.index)
     pred = predict_class(args.onnx, image)
@@ -176,23 +201,47 @@ def main():
 
     print("\nL-infinity robustness sweep:")
     summary = []
+    per_eps_records = []
     for eps in args.epsilons:
         print(f"\neps = {eps}")
         result = verify_robustness(
             args.onnx, image, pred, eps, timeout_sec=args.timeout)
         total_time = sum(d["time_sec"] for d in result["details"])
         summary.append((eps, result["verdict"], total_time))
+        record = {
+            "epsilon": eps,
+            "verdict": result["verdict"],
+            "total_time_sec": total_time,
+            "details": result["details"],
+        }
         print(f"  verdict: {result['verdict']}   "
               f"total time: {total_time:.2f}s")
         if result["verdict"] == "not_robust":
             tgt = result.get("first_sat_target")
             print(f"  -> adversarial flips prediction to "
                   f"{tgt} ({FASHION_LABELS[tgt]})")
+            record["first_sat_target"] = tgt
+        per_eps_records.append(record)
 
     print("\n=== summary ===")
     print(f"{'epsilon':>8s}  {'verdict':>10s}  {'total_time(s)':>14s}")
     for eps, verdict, t in summary:
         print(f"{eps:>8.4f}  {verdict:>10s}  {t:>14.2f}")
+
+    summary_path = out_dir / "summary.json"
+    with open(summary_path, "w") as f:
+        json.dump({
+            "onnx": args.onnx,
+            "image_index": args.index,
+            "true_label": label,
+            "predicted_class": pred,
+            "timeout_sec": args.timeout,
+            "results": per_eps_records,
+        }, f, indent=2)
+    print(f"\nwrote {summary_path} and {log_path}")
+
+    sys.stdout = sys.__stdout__
+    log_file.close()
 
 
 if __name__ == "__main__":
